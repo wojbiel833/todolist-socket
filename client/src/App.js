@@ -27,9 +27,14 @@ class App extends React.Component {
   };
 
   changeTaskName = () => {
-    // this.state.taskName
-    // console.log(this.state.tasks);
+    // this.state.setState(this.state.taskName)
+    console.log(this.state.taskName);
   };
+
+  submitForm(e) {
+    e.preventDefault();
+    this.addTask();
+  }
 
   render() {
     return (
@@ -52,19 +57,16 @@ class App extends React.Component {
             ))}
           </ul>
 
-          <form id="add-task-form">
+          <form id="add-task-form" onSubmit={this.submitForm}>
             <input
               className="text-input"
               autoComplete="off"
               type="text"
+              onChange={this.state.taskName}
               placeholder={this.state.taskName}
               id="task-name"
             />
-            <button
-              onChange={this.state.taskName}
-              className="btn"
-              type="submit"
-            >
+            <button className="btn" type="submit">
               Add
             </button>
           </form>
