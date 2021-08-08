@@ -1,26 +1,35 @@
 import React from "react";
-import io from "socket.io";
+import io from "socket.io-client";
 
 class App extends React.Component {
   state = {
-    tasks: ["Shopping"],
+    tasks: [
+      { name: "Shopping", id: 1 },
+      { name: "Gym", id: 2 },
+      { name: "Learning how to code", id: 3 },
+    ],
+    taskName: "",
   };
 
   componentDidMount() {
     this.socket = io();
-    // this.socket.connect("http://localhost:8000");
-    //CO JEST NIE TAK Z POLACZENIEM HOSTOW?
+    this.socket.connect("http://localhost:8000");
+    // this.socket.emit(this.state.tasks);
+    console.log(this.state.tasks);
   }
 
-  removeTask(id) {
-    console.log("remove");
-    // const task = this.state.tasks.find((item) => item.id === id);
-    const index = this.state.tasks.findIndex(
-      (item) => item.id === this.socket.id
-    );
+  removeTask = (id) => {
+    const index = this.state.tasks.findIndex((item) => item.id === id);
 
     this.state.tasks.splice(index, 1);
-  }
+    this.socket.emit(id);
+    console.log(this.state.tasks);
+  };
+
+  changeTaskName = () => {
+    // this.state.taskName
+    // console.log(this.state.tasks);
+  };
 
   render() {
     return (
@@ -34,8 +43,8 @@ class App extends React.Component {
 
           <ul className="tasks-section__list" id="tasks-list">
             {this.state.tasks.map((task) => (
-              <li key={task + task.length} className="task">
-                {task}
+              <li key={task.id} className="task">
+                {task.name}
                 <button className="btn btn--red" onClick={this.removeTask}>
                   Remove
                 </button>
@@ -48,10 +57,14 @@ class App extends React.Component {
               className="text-input"
               autoComplete="off"
               type="text"
-              placeholder="Type your description"
+              placeholder={this.state.taskName}
               id="task-name"
             />
-            <button className="btn" type="submit">
+            <button
+              onChange={this.state.taskName}
+              className="btn"
+              type="submit"
+            >
               Add
             </button>
           </form>

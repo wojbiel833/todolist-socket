@@ -4,13 +4,16 @@ const socket = require("socket.io");
 const tasks = [];
 
 const app = express();
-const server = app.listen(process.env.PORT || 8000, () => {
-  console.log("Server is running...");
+const server = app.listen(process.env.PORT || 7000, () => {
+  console.log("Server is running on port 7000");
 });
 const io = socket(server);
 
+// app.use((req, res) => {
+//   res.status(404).send({ message: "Not found..." });
+// });
 app.use((req, res) => {
-  res.status(404).send({ message: "Not found..." });
+  res.send(tasks);
 });
 
 io.on("connction", (socket) => {
