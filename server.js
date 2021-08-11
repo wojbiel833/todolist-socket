@@ -1,7 +1,12 @@
 const express = require("express");
 const socket = require("socket.io");
+const { v4: uuidv4 } = require("uuid");
 
-const tasks = [];
+const tasks = [
+  { name: "Shopping", id: uuidv4() },
+  { name: "Gym", id: uuidv4() },
+  { name: "Learning how to code", id: uuidv4() },
+];
 
 const app = express();
 const server = app.listen(process.env.PORT || 7000, () => {
@@ -16,7 +21,7 @@ app.use((req, res) => {
   res.send(tasks);
 });
 
-io.on("connction", (socket) => {
+io.on("connection", (socket) => {
   socket.to(socket.id).emit("updateData", tasks);
 
   io.on("addTask", (taskName) => {
@@ -24,9 +29,9 @@ io.on("connction", (socket) => {
     socket.broadcast.emit("addTask", taskName);
   });
 
-  io.on("removeTask", (taskName) => {
-    const index = tasks.findIndex(taskName);
-    tasks.splice(taskName[index], 1);
+  io.on("removeTask", (taskName, id) => {
+    const index = tasks[id];
+    if (id == tasks.id) tasks.splice(taskName[index], 1);
     socket.broadcast.emit("removeTask", taskName);
   });
 });
