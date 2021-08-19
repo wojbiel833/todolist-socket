@@ -1,5 +1,6 @@
 import React from "react";
 import io from "socket.io-client";
+import { v4 as uuidv4 } from "uuid";
 
 class App extends React.Component {
   state = {
@@ -8,51 +9,38 @@ class App extends React.Component {
   };
 
   componentDidMount() {
-    this.socket = io();
-    this.socket.connect("http://localhost:7000");
-    // this.socket.emit(this.state.tasks);
-    console.log(this.state.tasks);
+    this.socket = io("ws://localhost:7000", { transports: ["websocket"] });
 
-    this.socket.on("addTask", (taskName) => this.addTask(taskName));
-    // !!!
-    // opowiedz o kolejnosci wykonywania kolejnych zadan i komunikacji miedzy serverem i klientem - moze to mi ulatwi... :(
-    // !!!
-    this.socket.on("removeTask", (taskName, id) => this.removeTask(id));
-    this.socket.on("updateData", (task) => {
-      this.setState({ tasks: [...this.state.tasks, task] });
-      this.updateTasks();
+    this.socket.on("addTask", (taskName) => this.addTask(taskName, false));
+    this.socket.on("removeTask", (id) => this.removeTask(id, false));
+    this.socket.on("updateData", (tasks) => {
+      this.setState({ tasks: [...tasks] });
     });
     console.log(this.state.tasks);
   }
 
-  removeTask = (taskName, id, socket) => {
-    if (this.state.tasks[id]) this.index = id;
-
-    this.state.tasks.splice(this.index, 1);
-    // Musisz więc przemodelować tę funkcję, aby emitowanie zdarzenia do serwera miało miejsce tylko wtedy, gdy akcja usunięcia była wykonana najpierw lokalnie przez dany socket. Jeśli ta funkcja odpali się po informacji o potrzebie aktualizacji od serwera, powinna tylko usunąć odpowiedni element w swojej lokalnej tablicy. Krótko mówiąc, musisz uwarunkować odpowiednio emitowanie zdarzenia removeTask przez metodę removeTask.
-    if (!socket.id) this.socket.broadcast.emit(id);
-    console.log(this.state.tasks);
+  removeTask = (id, isLocal = true) => {
+    this.setState({ tasks: this.state.tasks.filter((task) => task.id !== id) });
+    if (isLocal) this.socket.emit("removeTask", id);
   };
 
-  changeTaskName = () => {
-    // this.state.setState(this.state.taskName)
-    console.log(this.state.taskName);
-    // Dodatkowo tak zmodyfikuj kod aplikacji, aby przy zmianie wartości w inpucie (onChange), automatycznie aktualizowała się też wartość zapisana w stanie (w state.taskName).
+  changeTaskName = (e) => {
+    this.setState({ taskName: e.target.value });
   };
 
-  addTask = (task) => {
-    // Stworzymy zaraz nową funkcję addTask, której zadaniem będzie tylko przyjmowanie w formie argumentu stringu z treścią zadania. Nie interesuje jej, czy pochodzi on ze state.taskName, czy może z informacji otrzymanej od serwera. Taka funkcja będzie mogła być używana od razu po wykryciu nowego tasku na serwerze, ale też właśnie przez naszą metodę submitForm.
-
-    // task.name = ?;
-    // task.id = ?;
-    this.state.tasks.push({ name: task.name, id: task.id });
+  addTask = (task, isLocal = true) => {
+    this.setState({
+      tasks: [...this.state.tasks, { name: task.name, id: task.id }],
+    });
+    if (isLocal) this.socket.emit("addTask", task);
   };
 
   submitForm = (e) => {
     e.preventDefault();
-    this.addTask();
-    console.log(this.state.tasks);
-    // Następnie powinna uruchamiać metodę addTask (zaraz ją dodamy). Przy wywołaniu tej metody pierwszy argument powinien mieć wartość state.taskName, aby funkcja addTask wiedziała, jaka ma być treść nowego zadania.
+    this.addTask({
+      name: this.state.taskName,
+      id: uuidv4(),
+    });
   };
 
   updateTask() {
@@ -76,10 +64,7 @@ class App extends React.Component {
                 {task.name}
                 <button
                   className="btn btn--red"
-                  onClick={
-                    this.removeTask
-                    //Przy przypinaniu tej funkcji do nasłuchiwacza pamiętaj też o przekazaniu do niej indeksu zadania – w końcu removeTask będzie musiała wiedzieć, który element z listy ma usunąć.
-                  }
+                  onClick={() => this.removeTask(task.id)}
                 >
                   Remove
                 </button>
@@ -92,7 +77,7 @@ class App extends React.Component {
               className="text-input"
               autoComplete="off"
               type="text"
-              onChange={this.state.taskName}
+              onChange={this.changeTaskName}
               placeholder={this.state.taskName}
               id="task-name"
             />

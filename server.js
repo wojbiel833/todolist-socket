@@ -22,17 +22,18 @@ app.use((req, res) => {
 });
 
 io.on("connection", (socket) => {
-  socket.to(socket.id).emit("updateData", tasks);
+  console.log("Jest connection!");
+  socket.emit("updateData", tasks);
 
-  io.on("addTask", (taskName) => {
+  socket.on("addTask", (taskName) => {
     tasks.push(taskName);
     socket.broadcast.emit("addTask", taskName);
   });
 
-  io.on("removeTask", (taskName, id) => {
-    const index = tasks[id];
-    if (id == tasks.id) tasks.splice(taskName[index], 1);
-    socket.broadcast.emit("removeTask", taskName);
+  socket.on("removeTask", (id) => {
+    const index = tasks.findIndex((task) => task.id === id);
+    tasks.splice(index, 1);
+    socket.broadcast.emit("removeTask", id);
   });
 });
 
